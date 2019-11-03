@@ -67,7 +67,7 @@ namespace Parse {
             case CPoolTags::FieldRef: return std::make_unique<ConstantFieldRefInfo>(*this);
             case CPoolTags::MethodRef: return std::make_unique<ConstantMethodRefInfo>(*this);
             case CPoolTags::InterfaceMethodRef: return std::make_unique<ConstantInterfaceMethodRefInfo>(*this);
-            case CPoolTags::NameNadType: return std::make_unique<ConstantNameAndTypeInfo>(*this);
+            case CPoolTags::NameAndType: return std::make_unique<ConstantNameAndTypeInfo>(*this);
             case CPoolTags::MethodHandle: return std::make_unique<ConstantMethodHandleInfo>(*this);
             case CPoolTags::MethodType: return std::make_unique<ConstantMethodTypeInfo>(*this);
             case CPoolTags::Dynamic: return std::make_unique<ConstantDynamicInfo>(*this);

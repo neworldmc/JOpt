@@ -25,7 +25,34 @@ namespace Parse {
         virtual std::vector<U1> ReadBytes(int n) = 0;
     };
 
-    struct CpInfoBase : virtual Object {};
+    struct IResolvable: virtual Object {
+        virtual void Resolve() = 0;
+    };
+    
+    enum class CPoolTags : U1 {
+        Utf8 = 1,
+        Integer = 3,
+        Float = 4,
+        Long = 5,
+        Double = 6,
+        Class = 7,
+        String = 8,
+        FieldRef = 9,
+        MethodRef = 10,
+        InterfaceMethodRef = 11,
+        NameAndType = 12,
+        MethodHandle = 15,
+        MethodType = 16,
+        Dynamic = 17,
+        InvokeDynamic = 18,
+        Module = 19,
+        Package = 20
+    };
+
+    struct CpInfoBase : virtual Object, IResolvable {
+        explicit CpInfoBase(const CPoolTags tag) noexcept: Tag(tag) {}
+        const CPoolTags Tag;
+    };
 
     using CpInfo = std::unique_ptr<CpInfoBase>;
 
