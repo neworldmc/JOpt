@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <memory>
 
 namespace Parse {
     using U1 = uint8_t;
