@@ -2,15 +2,26 @@
 
 #include "ClassFile.h"
 #include <stdexcept>
+#include "CpInfo.h"
 
 namespace Parse {
     using PByte = const std::byte*;
 
-    class Parser {
+    class Parser : public IParser {
     public:
-        U4 ReadU4() { return PeekU4(Vpa(4)); }
+        U4 ReadU4() override { return PeekU4(Vpa(4)); }
 
-        U2 ReadU2() { return PeekU2(Vpa(2)); }
+        U2 ReadU2() override { return PeekU2(Vpa(2)); }
+
+        U1 ReadU1() override { return PeekU1(Vpa(1)); }
+
+        std::vector<U1> ReadBytes(const int n) override {
+            if (n < 0) { throw std::invalid_argument("ReadBytes: negative count"); }
+            if (Cur + n > Bound) { throw std::range_error("ReadBytes: out of range"); }
+            const auto start = Cur;
+            Cur += n;
+            return std::vector<U1>(reinterpret_cast<const U1*>(start), reinterpret_cast<const U1*>(Cur));
+        }
 
         void ParseOnto(const std::vector<std::byte>& bytes, ClassFile& f) {
             Cur = bytes.data();
@@ -32,37 +43,57 @@ namespace Parse {
             f.AttributesCount = ReadU2();
             f.Attributes = LoadAttributes(f.AttributesCount);
         }
-    private:
-        static uint16_t PeekU1(PByte ptr) noexcept {
-            return static_cast<uint8_t>(ptr[0]);
-        }
 
-        static uint16_t PeekU2(PByte ptr) noexcept {
+    private:
+        static uint16_t PeekU1(const PByte ptr) noexcept { return static_cast<uint8_t>(ptr[0]); }
+
+        static uint16_t PeekU2(const PByte ptr) noexcept {
             return static_cast<uint16_t>(ptr[0]) << 8 | static_cast<uint16_t>(ptr[1]);
         }
 
-        static uint32_t PeekU4(PByte ptr) noexcept {
+        static uint32_t PeekU4(const PByte ptr) noexcept {
             return static_cast<uint32_t>(PeekU2(ptr)) << 16 | static_cast<uint32_t>(PeekU2(ptr + 2));
         }
 
-        std::vector<CpInfo> LoadConstantPool(U2 count) {
-            // TODO
-            return std::vector<CpInfo>();
+        CpInfo LoadConstant(const CPoolTags type) {
+            switch (type) {
+            case CPoolTags::Utf8: return std::make_unique<ConstantUtf8Info>(*this);
+            case CPoolTags::Integer: return std::make_unique<ConstantIntegerInfo>(*this);
+            case CPoolTags::Float: return std::make_unique<ConstantFloatInfo>(*this);
+            case CPoolTags::Long: return std::make_unique<ConstantLongInfo>(*this);
+            case CPoolTags::Double: return std::make_unique<ConstantDoubleInfo>(*this);
+            case CPoolTags::Class: return std::make_unique<ConstantClassInfo>(*this);
+            case CPoolTags::String: return std::make_unique<ConstantStringInfo>(*this);
+            case CPoolTags::FieldRef: return std::make_unique<ConstantFieldRefInfo>(*this);
+            case CPoolTags::MethodRef: return std::make_unique<ConstantMethodRefInfo>(*this);
+            case CPoolTags::InterfaceMethodRef: return std::make_unique<ConstantInterfaceMethodRefInfo>(*this);
+            case CPoolTags::NameNadType: return std::make_unique<ConstantNameAndTypeInfo>(*this);
+            case CPoolTags::MethodHandle: return std::make_unique<ConstantMethodHandleInfo>(*this);
+            case CPoolTags::MethodType: return std::make_unique<ConstantMethodTypeInfo>(*this);
+            case CPoolTags::Dynamic: return std::make_unique<ConstantDynamicInfo>(*this);
+            case CPoolTags::InvokeDynamic: return std::make_unique<ConstantInvokeDynamicInfo>(*this);
+            case CPoolTags::Module: return std::make_unique<ConstantModuleInfo>(*this);
+            case CPoolTags::Package: return std::make_unique<ConstantPackageInfo>(*this);
+            default: ;
+            }
+            throw std::runtime_error("unexpected constant type");
         }
 
-        std::vector<U2> LoadInterfaces(U2 count) {
-            std::vector<U2> result(count);
-            for (U2 i=0; i<count; i++) {
-                result[i] = ReadU2();
-            }
+        std::vector<CpInfo> LoadConstantPool(const U2 count) {
+            std::vector<CpInfo> result(count);
+            for (U2 i = 1; i < count; i++) { result[i] = LoadConstant(static_cast<CPoolTags>(ReadU1())); }
             return result;
         }
 
-        std::vector<FieldInfo> LoadFields(U2 count) {
+        std::vector<U2> LoadInterfaces(const U2 count) {
+            std::vector<U2> result(count);
+            for (U2 i = 0; i < count; i++) { result[i] = ReadU2(); }
+            return result;
+        }
+
+        std::vector<FieldInfo> LoadFields(const U2 count) {
             std::vector<FieldInfo> result(count);
-            for (U2 i=0; i<count; i++) {
-                result[i] = ReadFieldInfo();
-            }
+            for (U2 i = 0; i < count; i++) { result[i] = ReadFieldInfo(); }
             return result;
         }
 
@@ -76,11 +107,9 @@ namespace Parse {
             return result;
         }
 
-        std::vector<MethodInfo> LoadMethods(U2 count) {
+        std::vector<MethodInfo> LoadMethods(const U2 count) {
             std::vector<MethodInfo> result(count);
-            for (U2 i=0; i<count; i++) {
-                result[i] = ReadMethodInfo();
-            }
+            for (U2 i = 0; i < count; i++) { result[i] = ReadMethodInfo(); }
             return result;
         }
 
@@ -94,11 +123,9 @@ namespace Parse {
             return result;
         }
 
-        std::vector<AttributeInfo> LoadAttributes(U2 count) {
+        std::vector<AttributeInfo> LoadAttributes(const U2 count) {
             std::vector<AttributeInfo> result(count);
-            for (U2 i=0; i<count; i++) {
-                result[i] = ReadAttributeInfo();
-            }
+            for (U2 i = 0; i < count; i++) { result[i] = ReadAttributeInfo(); }
             return result;
         }
 
@@ -110,18 +137,6 @@ namespace Parse {
             return result;
         }
 
-        std::vector<std::byte> ReadBytes(int n) {
-            if (n < 0) {
-                throw std::invalid_argument("ReadBytes: negative count");
-            }
-            if (Cur + n > Bound) {
-                throw std::range_error("ReadBytes: out of range");
-            }
-            PByte start = Cur;
-            Cur += n;
-            return std::vector<std::byte>(start, Cur);
-        }
-
         PByte Vpa(const int count) {
             if (Cur + count <= Bound) {
                 const auto old = Cur;
@@ -131,6 +146,6 @@ namespace Parse {
             throw std::range_error("Read Out of File Bound");
         }
 
-        PByte Cur, Bound;
+        PByte Cur = nullptr, Bound = nullptr;
     };
 }

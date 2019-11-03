@@ -6,10 +6,8 @@
 
 using namespace Parse;
 
-std::vector<std::byte>
-slurp(const char *path)
-{
-    FILE *fp = fopen(path, "rb");
+std::vector<std::byte> slurp(const char* path) {
+    FILE* fp = fopen(path, "rb");
     if (!fp) {
         fprintf(stderr, "%s: %s\n", path, strerror(errno));
         exit(1);
@@ -28,14 +26,12 @@ slurp(const char *path)
     return result;
 }
 
-int
-main(int argc, char *argv[])
-{
+int main(int argc, char* argv[]) {
     if (argc < 2) {
         fputs("too few arguments\n", stderr);
         return 1;
     }
-    char *path = argv[1];
+    char* path = argv[1];
     std::vector<std::byte> data = slurp(path);
     Parser parser;
     ClassFile class_file;
