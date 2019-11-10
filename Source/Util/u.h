@@ -1,5 +1,7 @@
 /* Essential utilities */
 
+#pragma once
+
 #include <assert.h>
 #include <ctype.h>
 #include <stdarg.h>
@@ -78,6 +80,8 @@ char *rsprintf(Region *r, const char *fmt, ...);
 #endif
 
 #ifdef __cplusplus
+#include <cstddef>
+#include <utility>
 void *operator new(std::size_t, Region &r);
 void *operator new(std::size_t, std::align_val_t, Region &r);
 void *operator new[](std::size_t, Region &r);
