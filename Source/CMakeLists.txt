@@ -5,3 +5,4 @@ add_executable(JOpt ${SOURCE})
 target_enable_ipo(JOpt)
 
 target_include_directories(JOpt PRIVATE .)
+target_link_libraries(JOpt PRIVATE NRT.Core) 
