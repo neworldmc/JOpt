@@ -25,7 +25,6 @@ xrealloc(void *ptr, size_t size)
 /* region-based memory management */
 
 #define CHUNK_SIZE 0x1000
-#define ALIGN(x,a) (((x)+(a)-1)&(-(a)))
 
 typedef struct chunk {
     struct chunk *next;
@@ -48,13 +47,29 @@ new_chunk(Region *r, int data_size)
     r->limit = c->limit;
 }
 
+void
+ralign(Region *r, int align)
+{
+    assert(r->cur);
+    intptr_t mask = align-1;
+    intptr_t lalign = align;
+    intptr_t diff = (lalign - ((intptr_t) r->cur) & mask) & mask;
+    if (diff > r->limit - r->cur) {
+        new_chunk(r, 0);
+        r->cur = (char *) (((intptr_t) r->cur + lalign - 1) & -lalign);
+    } else {
+        r->cur += diff;
+    }
+}
+
 void *
 ralloc(Region *r, int size, int align)
 {
     void *ret;
     assert(size >= 0);
-    size = ALIGN(size, align);
-    if (r->cur + size > r->limit) {
+    if (!r->cur) new_chunk(r, 0);
+    ralign(r, align);
+    if (size > r->limit - r->cur) {
         new_chunk(r, size);
     }
     ret = r->cur;
@@ -238,11 +253,11 @@ regionbuf_grow(RegionBuf *rb, int newsize)
 {
     Region *r = rb->r;
     char *oldcur = r->cur;
-    int oldlen = oldcur - (char *) rb->start; // this many bytes need to be copied
+    int oldlen = oldcur - rb->start; // this many bytes need to be copied
     new_chunk(r, newsize);
     /* move data in (rb->start -- r->cur) to new area */
     memcpy(r->cur, rb->start, oldlen);
-    rb->start = (char *) r->cur;
+    rb->start = r->cur;
     r->cur += oldlen;
 }
 
@@ -250,8 +265,8 @@ static void
 regionbuf_ensure_avail(RegionBuf *rb, int n)
 {
     Region *r = rb->r;
-    if ((char *) r->limit - (char *) r->cur < n) {
-        int oldsize = (char *) r->limit - rb->start;
+    if (r->limit - r->cur < n) {
+        int oldsize = r->limit - rb->start;
         int newsize = oldsize*2+n;
         regionbuf_grow(rb, newsize);
     }
@@ -283,7 +298,7 @@ init_regionbuf(RegionBuf *rb, Region *r)
     rb->buf.putc = regionbuf_putc;
     rb->buf.puts = regionbuf_puts;
     rb->r = r;
-    rb->start = (char *) r->cur;
+    rb->start = r->cur;
 }
 
 char *
@@ -291,7 +306,7 @@ finish_regionbuf(RegionBuf *rb)
 {
     Region *r = rb->r;
     if (r->cur == r->limit) {
-        regionbuf_grow(rb, (char *) r->cur - rb->start + 1);
+        regionbuf_grow(rb, r->cur - rb->start + 1);
     }
     *(char*)r->cur = 0;
     r->cur++;

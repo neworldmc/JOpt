@@ -1,10 +1,11 @@
-/* Convert ClassFile to high-level class representation, JClass */
+/* Convert ClassFile to high-level class representation */
 
 #include <string>
 #include <stdexcept>
-#include "u.h"
+#include "Util/u.h"
 #include "CpInfo.h"
-#include "JClass.h"
+#include "Javalib/Basic.h"
+#include "Javalib/Class.h"
 
 struct NotFound : public std::exception {
     std::string msg;
@@ -54,13 +55,12 @@ lookup_string(const std::vector<StringTableEntry> &table, int key)
     }
 }
 
-JClass *
+Class *
 ConvertClassFile(const Parse::ClassFile *cf, Region &r)
 {
     using namespace Parse;
 
-    auto jc = new(r) JClass;
-    //JClass *jc = (decltype(jc)) ralloc(r, sizeof *jc, alignof *jc);
+    auto jc = new(r) Class;
 
     std::vector<StringTableEntry> strtab;
 
@@ -73,7 +73,6 @@ ConvertClassFile(const Parse::ClassFile *cf, Region &r)
             const auto &bytes = utf8info->Bytes;
             int len = bytes.size();
             char *s = new(r) char[len+1];
-            //char *s = (char *) ralloc(r, len+1, 1);
             memcpy(s, bytes.data(), len);
             s[len] = 0;
             strtab.emplace_back(i, s);
@@ -103,6 +102,7 @@ ConvertClassFile(const Parse::ClassFile *cf, Region &r)
         f.AccessFlags = fi.AccessFlags;
         f.Name = lookup_string(strtab, fi.NameIndex);
         f.Desc = lookup_string(strtab, fi.DescriptorIndex);
+        f.Type = ParseFieldDescriptor(f.Desc, r);
         f.AttributeCount = fi.AttributesCount;
         int n = f.AttributeCount;
         f.Attributes = new(r) Attribute[n];
@@ -115,6 +115,7 @@ ConvertClassFile(const Parse::ClassFile *cf, Region &r)
         m.AccessFlags = mi.AccessFlags;
         m.Name = lookup_string(strtab, mi.NameIndex);
         m.Desc = lookup_string(strtab, mi.DescriptorIndex);
+        m.Type = ParseMethodDescriptor(m.Desc, r);
         m.AttributeCount = mi.AttributesCount;
         int n = m.AttributeCount;
         m.Attributes = new(r) Attribute[n];

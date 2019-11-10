@@ -1,6 +1,7 @@
-#include "u.h"
+#include "Util/u.h"
 #include "Parser.h"
-#include "JClass.h"
+#include "Javalib/Basic.h"
+#include "Javalib/Class.h"
 #include "Convert.h"
 
 using namespace Parse;
@@ -44,7 +45,9 @@ int main(int argc, char* argv[]) {
     Region r;
     rinit(&r);
 
-    JClass *jclass = ConvertClassFile(&class_file, r);
+    Class *jclass = ConvertClassFile(&class_file, r);
+    FileBuf fb;
+    init_filebuf(&fb, stdout);
     printf("class name: %s\n", jclass->ThisClass);
     const char *sc = jclass->SuperClass_opt;
     if (!sc) sc = "(none)";
@@ -56,12 +59,17 @@ int main(int argc, char* argv[]) {
     puts("fields:");
     for (int i=0; i<jclass->FieldCount; i++) {
         const Field &f = jclass->Fields[i];
-        printf("  %s %s\n", f.Name, f.Desc);
+        bprintf(&fb.buf, "  %a %s\n", PP_JType, f.Type, f.Name);
     }
     puts("methods:");
     for (int i=0; i<jclass->MethodCount; i++) {
         const Method &m = jclass->Methods[i];
-        printf("  %s %s\n", m.Name, m.Desc);
+        bprintf(&fb.buf, "  %a %s(", PP_JType_opt, m.Type.ReturnType_opt, m.Name);
+        for (int j=0; j<m.Type.NumArg; j++) {
+            if (j) bputs(&fb.buf, ", ");
+            PP_JType(&fb.buf, m.Type.ArgTypes[j]);
+        }
+        puts(")");
     }
     puts("attributes:");
     for (int i=0; i<jclass->AttributeCount; i++) {

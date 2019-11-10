@@ -58,6 +58,7 @@ void *ralloc(Region *r, int size, int align);
 void rinit(Region *r);
 void rfreeall(Region *r);
 void rfree(Region *r, void *p);
+void ralign(Region *r, int align);
 
 void init_heapbuf(HeapBuf *);
 void init_heapbuf_size(HeapBuf *, int);

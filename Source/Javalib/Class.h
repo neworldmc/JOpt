@@ -1,7 +1,5 @@
 /* High-level representation of Java class file */
 
-#include <cstdint>
-
 struct Attribute {
     const char *Name;
     int Length; // of Info[]
@@ -12,6 +10,7 @@ struct Field {
     uint16_t AccessFlags;
     const char *Name;
     const char *Desc; // descriptor; will be typed out often so shorten it
+    JType Type;
     int AttributeCount;
     Attribute *Attributes;
 };
@@ -20,11 +19,12 @@ struct Method {
     uint16_t AccessFlags;
     const char *Name;
     const char *Desc;
+    MethodType Type;
     int AttributeCount;
     Attribute *Attributes;
 };
 
-struct JClass {
+struct Class {
     uint16_t MinorVersion;
     uint16_t MajorVersion;
     uint16_t AccessFlags;

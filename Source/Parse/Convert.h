@@ -1,1 +1,1 @@
-JClass *ConvertClassFile(const Parse::ClassFile *, Region &);
+Class *ConvertClassFile(const Parse::ClassFile *, Region &);
