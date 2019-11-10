@@ -7,6 +7,15 @@
 namespace Parse {
     using PByte = const std::byte*;
 
+    struct InvalidClassFile : public std::exception {
+        std::string msg;
+        InvalidClassFile(const char *wrapped_msg):
+            msg(std::string("invalid class_file: ") + wrapped_msg) {}
+        const char *what() const noexcept {
+            return msg.c_str();
+        }
+    };
+
     class Parser : public IParser {
     public:
         U4 ReadU4() override { return PeekU4(Vpa(4)); }
@@ -27,6 +36,9 @@ namespace Parse {
             Cur = bytes.data();
             Bound = Cur + bytes.size();
             f.Magic = ReadU4();
+            if (f.Magic != 0xcafebabe) {
+                throw InvalidClassFile("invalid magic");
+            }
             f.MinorVersion = ReadU2();
             f.MajorVersion = ReadU2();
             f.ConstantPoolCount = ReadU2();

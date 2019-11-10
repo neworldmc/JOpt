@@ -17,7 +17,7 @@ namespace Parse {
         Object& operator = (const Object&) = delete;
         virtual ~Object() noexcept = default;
     };
-    
+
     struct IParser: virtual Object {
         virtual U4 ReadU4() = 0;
         virtual U2 ReadU2() = 0;
@@ -28,7 +28,7 @@ namespace Parse {
     struct IResolvable: virtual Object {
         virtual void Resolve() = 0;
     };
-    
+
     enum class CPoolTags : U1 {
         Utf8 = 1,
         Integer = 3,
@@ -58,7 +58,7 @@ namespace Parse {
 
     struct AttributeInfo {
         U2 AttributeNameIndex{};
-        U4 AttributeLength{};
+        U4 AttributeLength{}; // of Info
         std::vector<U1> Info {};
     };
 
@@ -67,7 +67,7 @@ namespace Parse {
         U2 NameIndex{};
         U2 DescriptorIndex{};
         U2 AttributesCount{};
-		std::vector<AttributeInfo> Attributes{};
+        std::vector<AttributeInfo> Attributes{};
     };
 
     struct MethodInfo {
@@ -87,9 +87,9 @@ namespace Parse {
         U2 AccessFlags{};
         U2 ThisClass{};
         U2 SuperClass{};
-        U2 InterfaceCount{};
+        U2 InterfaceCount{}; // the spec actually says "interfaces_count"
         std::vector<U2> Interfaces;
-        U2 FieldCount{};
+        U2 FieldCount{}; // "fields_count"
         std::vector<FieldInfo> Fields;
         U2 MethodsCount{};
         std::vector<MethodInfo> Methods;

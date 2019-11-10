@@ -1,9 +1,7 @@
-#include <cassert>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <fstream>
+#include "u.h"
 #include "Parser.h"
+#include "JClass.h"
+#include "Convert.h"
 
 using namespace Parse;
 
@@ -36,6 +34,39 @@ int main(int argc, char* argv[]) {
     const auto data = slurp(path);
     Parser parser {};
     ClassFile class_file {};
-    parser.ParseOnto(data, class_file);
+    try {
+        parser.ParseOnto(data, class_file);
+    } catch (const InvalidClassFile &e) {
+        fputs(e.what(), stderr);
+        return 1;
+    }
+
+    Region r;
+    rinit(&r);
+
+    JClass *jclass = ConvertClassFile(&class_file, r);
+    printf("class name: %s\n", jclass->ThisClass);
+    const char *sc = jclass->SuperClass_opt;
+    if (!sc) sc = "(none)";
+    printf("super class: %s\n", sc);
+    puts("interfaces:");
+    for (int i=0; i<jclass->InterfaceCount; i++) {
+        printf("  %s\n", jclass->Interfaces[i]);
+    }
+    puts("fields:");
+    for (int i=0; i<jclass->FieldCount; i++) {
+        const Field &f = jclass->Fields[i];
+        printf("  %s %s\n", f.Name, f.Desc);
+    }
+    puts("methods:");
+    for (int i=0; i<jclass->MethodCount; i++) {
+        const Method &m = jclass->Methods[i];
+        printf("  %s %s\n", m.Name, m.Desc);
+    }
+    puts("attributes:");
+    for (int i=0; i<jclass->AttributeCount; i++) {
+        const Attribute &a = jclass->Attributes[i];
+        printf("  %s\n", a.Name);
+    }
     return 0;
 }
