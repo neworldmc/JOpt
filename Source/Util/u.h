@@ -82,10 +82,31 @@ char *rsprintf(Region *r, const char *fmt, ...);
 #ifdef __cplusplus
 #include <cstddef>
 #include <utility>
-void *operator new(std::size_t, Region &r);
-void *operator new(std::size_t, std::align_val_t, Region &r);
-void *operator new[](std::size_t, Region &r);
-void *operator new[](std::size_t, std::align_val_t, Region &r);
+inline void *
+operator new(std::size_t size, Region &r)
+{
+    return ralloc(&r, (int)size, __STDCPP_DEFAULT_NEW_ALIGNMENT__);
+}
+inline void *
+operator new(std::size_t size, std::align_val_t align, Region &r)
+{
+    return ralloc(&r, (int)size, (int)align);
+}
+inline void *
+operator new[](std::size_t size, Region &r)
+{
+    return ralloc(&r, (int)size, __STDCPP_DEFAULT_NEW_ALIGNMENT__);
+}
+inline void *
+operator new[](std::size_t size, std::align_val_t align, Region &r)
+{
+    return ralloc(&r, (int)size, (int)align);
+}
+inline char *
+new_string(size_t len, Region &r)
+{
+    return (char *) ralloc(&r, (int)len, 1);
+}
 #else
 #define NEW(p, r) p = ralloc(r, sizeof *p, alignof(*p))
 #define NEWARRAY(p, n, r) p = ralloc(r, (n) * sizeof *p, alignof(*p))

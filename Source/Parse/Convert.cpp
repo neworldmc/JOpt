@@ -60,7 +60,7 @@ ConvertClassFile(const Parse::ClassFile* cf, Region& r) {
             const auto& utf8info = ConstantUtf8Info::Reference(cpinfo);
             const auto& bytes = utf8info.Bytes;
             int len = bytes.size();
-            char* s = new(r) char[len + 1];
+            char* s = new_string(len+1, r);
             memcpy(s, bytes.data(), len);
             s[len] = 0;
             strtab.emplace_back(i, s);

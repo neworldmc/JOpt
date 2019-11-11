@@ -54,7 +54,7 @@ parse_type(const char** ps, Region& r) {
         const char* psemi = strchr(s, ';');
         if (!psemi) throw InvalidDescriptor();
         int len = psemi - s;
-        char* class_name = new(r) char[len + 1];
+        char* class_name = new_string(len+1, r);
         memcpy(class_name, s, len);
         s = psemi + 1;
         class_name[len] = 0;
